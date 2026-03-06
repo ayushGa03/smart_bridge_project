@@ -23,12 +23,26 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
+// Allowed origins — local dev + production
+const allowedOrigins = [
+  'http://localhost:5000',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://smart-bridge-project.onrender.com',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: false, // Allow React app assets to load
 }));
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS blocked: ${origin}`));
+  },
   credentials: true,
 }));
 
@@ -56,7 +70,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // ─── Serve React static files from public/dist ───────────────
-const distPath = path.resolve(__dirname, './public/assets');
+const distPath = path.resolve(__dirname, '../../public/dist');
 app.use(express.static(distPath));
 
 // Health check
@@ -73,7 +87,7 @@ app.use('/api/watchlist', watchlistRoutes);
 app.use('/api/admin', adminRoutes);
 
 // ─── Catch-all: send React index.html for any non-API route ──
-// This makes React Router work (e.g. /markets, /portfolio, etc.)
+// This makes React Router work on refresh (e.g. /markets, /portfolio)
 app.get('*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
@@ -86,6 +100,7 @@ app.listen(PORT, () => {
   console.log(`\n🚀 SB Stocks running on http://localhost:${PORT} [${process.env.NODE_ENV}]`);
   console.log(`   Frontend: http://localhost:${PORT}`);
   console.log(`   API:      http://localhost:${PORT}/api`);
+  console.log(`   Production: https://smart-bridge-project.onrender.com`);
 });
 
 module.exports = app;
