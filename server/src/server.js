@@ -70,7 +70,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // ─── Serve React static files from public/dist ───────────────
-const distPath = path.resolve(__dirname, '../public/assets');
+const distPath = path.resolve(__dirname, 'public/assets');
 app.use(express.static(distPath));
 
 // Health check
